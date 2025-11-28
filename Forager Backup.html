@@ -42,14 +42,63 @@
     <select id="weaponSelect" style="width:100%"></select>
     <button onclick="giveWeapon()">Give Weapon</button>
 
-    <!-- Boss spawn section -->
-    <h3>Boss Spawn (Dev)</h3>
-    <select id="bossSelect" style="width:100%"></select>
-    <label>
-        <input type="checkbox" id="friendlyBossCheckbox"> Friendly
-    </label>
-    <button onclick="spawnBossDevPanel()">Spawn Boss</button>
-</div>
+<!-- Boss spawn section -->
+<h3>Boss Spawn (Dev)</h3>
+<select id="bossSelect" style="width:100%"></select>
+<button onclick="spawnBossDevPanel()">Spawn Boss</button>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+
+    const bossSelect = document.getElementById("bossSelect");
+
+    function waitForBossDefs() {
+        if (typeof bossDefs === "undefined") {
+            setTimeout(waitForBossDefs, 100);
+            return;
+        }
+        populateBossDropdown();
+    }
+
+    function populateBossDropdown() {
+        bossSelect.innerHTML = ""; // clear existing
+        bossDefs.forEach(b => {
+            const opt = document.createElement("option");
+            opt.value = b.name;
+            opt.textContent = b.name;
+            bossSelect.appendChild(opt);
+        });
+    }
+
+    waitForBossDefs();
+
+    // Spawn boss near player (permanent until defeated)
+    window.spawnBossDevPanel = function() {
+        const selected = bossSelect.value;
+        const def = bossDefs.find(b => b.name === selected);
+        if (!def) return;
+
+        bosses.push({
+            x: player.x + rand(-50,50),
+            y: player.y + rand(-50,50),
+            w: 56,
+            h: 56,
+            hp: def.maxHp,
+            maxHp: def.maxHp,
+            name: def.name,
+            rarity: def.rarity,
+            biome: def.biome,
+            color: def.color,
+            dead: false,
+            friendly: false, // hostile to player
+            attackCooldown: rand(120,420),
+            temporary: true // optional, can keep if you want special effects
+        });
+
+        if (typeof playSound === "function") playSound("magic");
+    };
+});
+</script>
 
 <div id="hud">
   <div class="stat" id="hpStat"></div>
