@@ -1088,7 +1088,7 @@ function performAttack() {
                 size: 40,
                 life: 36
             });
-            hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 350, base*30, w);
+            hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 350, 5000000, w);
             playSound('explosion');
             break;
         }
@@ -1318,7 +1318,7 @@ function performAbility(){
 
     case 'calamity':
       spawnVFX('cosmic', player.x, player.y, {color:'255,255,255', size:80, life:80});
-      hitEntitiesInRadius(player.x, player.y, 500, w.atk*80, w);
+      hitEntitiesInRadius(player.x, player.y, 500, 25000000, w);
       playSound('explosion');
       break;
 	  
@@ -1713,3 +1713,4 @@ window._GAME = { player, enemies, bosses, chests, meteors };
 </script>
 </body>
 </html>
+
