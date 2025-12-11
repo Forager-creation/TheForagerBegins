@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Forager 1.2</title>
+<title>Forager 1.21</title>
 <style>
   :root{--panel-bg:#0f1113;--panel-border:#333;--text:#e6eef2}
   html,body{height:100%;margin:0;background:#040607;color:var(--text);font-family:Inter,Arial,monospace}
@@ -26,6 +26,25 @@
 </head>
 <body>
 <canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="stat" id="hpStat"></div>
+  <div class="stat" id="currencyStat"></div>
+  <div id="controls" style="margin-top:6px">
+    <button id="attackBtn">Attack</button>
+    <button id="abilityBtn">Ability</button>
+  </div>
+  <!-- Boss timer -->
+  <div id="bossTimerContainer" style="width:300px; height:20px; border:1px solid #fff; margin-top:5px; background:#222;">
+    <div id="bossTimerBar" style="width:0%; height:100%; background:#f00;"></div>
+  </div>
+  <div id="bossCountdown"></div>
+  <div id="bossTimerHUD" style="position: absolute; bottom: 100px; left: 20px; width: 200px;">
+    <div id="bossCountdown" style="text-align:center; font-weight:bold; margin-bottom: 2px; color:white;"></div>
+        <div id="bossBar" style="height: 100%; width: 100%; background: #0f0;"></div>
+    </div>
+</div>
+</div>
 
 <div id="ui">
   <div class="panel" id="inventoryPanel"><h3>Inventory</h3><div id="invList"></div></div>
@@ -100,25 +119,6 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-<div id="hud">
-  <div class="stat" id="hpStat"></div>
-  <div class="stat" id="currencyStat"></div>
-  <div id="controls" style="margin-top:6px">
-    <button id="attackBtn">Attack</button>
-    <button id="abilityBtn">Ability</button>
-  </div>
-  <!-- Boss timer -->
-  <div id="bossTimerContainer" style="width:300px; height:20px; border:1px solid #fff; margin-top:5px; background:#222;">
-    <div id="bossTimerBar" style="width:0%; height:100%; background:#f00;"></div>
-  </div>
-  <div id="bossCountdown"></div>
-  <div id="bossTimerHUD" style="position: absolute; bottom: 100px; left: 20px; width: 200px;">
-    <div id="bossCountdown" style="text-align:center; font-weight:bold; margin-bottom: 2px; color:white;"></div>
-        <div id="bossBar" style="height: 100%; width: 100%; background: #0f0;"></div>
-    </div>
-</div>
-</div>
-
 <div id="inventoryPanel" style="background:#555; width:300px; height:auto;">
     <div id="invList"></div>
 </div>
@@ -188,7 +188,7 @@ const player = {
     inventory: [],
     equipped: null,
     stats: { power: 0, durability: 0, stealth: 0, speed: 0 },
-    statPoints: 20,
+    statPoints: 3,
     coins: 100,
     gems: 0,
     coinEnchantLevel: 0,
@@ -335,16 +335,53 @@ const weaponCatalog = [
   {name:"Flamethrower",rarity:"epic",type:"flame"},
   {name:"Refined Chakram",rarity:"epic",type:"chakram"},
   {name:"Elemental Sword",rarity:"epic",type:"elemental"},
+  {name:"Thunder Pike", rarity:"epic", type:"lightning"},
+  {name:"Spectral Chakram", rarity:"epic", type:"chakram"},
+  {name:"Runeblade", rarity:"epic", type:"elemental"},
+  {name:"Dragon Tongue", rarity:"epic", type:"fire"},
+  {name:"Frozen Maul", rarity:"epic", type:"ice"},
+  {name:"Bloodspiller", rarity:"epic", type:"melee"},
+  {name:"Serpent Staff", rarity:"epic", type:"magic"},
+  {name:"Arcshot Bow", rarity:"epic", type:"bow"},
   {name:"Paladin's Hammer",rarity:"legendary",type:"paladin"},
   {name:"Bomb-O-Launcher",rarity:"legendary",type:"bomb"},
   {name:"Daybreaker",rarity:"legendary",type:"daybreaker"},
-  {name:"Crescent Mask",rarity:"mythic",type:"crescent"},
+  {name:"Heaven’s Judgement", rarity:"legendary", type:"holy"},
+  {name:"Molten Executioner", rarity:"legendary", type:"fire"},
+  {name:"Blizzard Catalyst", rarity:"legendary", type:"ice"},
+  {name:"Skyshatter Bow", rarity:"legendary", type:"bow"},
+  {name:"Demolisher Hammer", rarity:"legendary", type:"hammer"},
+  {name:"Soul Lock", rarity:"legendary", type:"curse"},
+  {name:"Phoenix Oathblade", rarity:"legendary", type:"flame"},
+  {name:"Starborn Staff", rarity:"legendary", type:"magic"},
   {name:"Cryogenic",rarity:"mythic",type:"ice"},
   {name:"Soul Reaper", rarity:"mythic", type:"soulReaper"},
+  {name:"Oblivion Edge", rarity:"mythic", type:"void"},
+  {name:"Chrono Breaker", rarity:"mythic", type:"time"},
+  {name:"Starseer Bow", rarity:"mythic", type:"cosmic"},
+  {name:"Demonheart Cleaver", rarity:"mythic", type:"curse"},
+  {name:"Necrotide Staff", rarity:"mythic", type:"necrotic"},
+  {name:"Echo of the Ancients", rarity:"mythic", type:"spirit"},
+  {name:"Titan Crusher", rarity:"mythic", type:"hammer"},
+  {name:"Soul Render", rarity:"mythic", type:"soul"},
   {name:"Shockwave Hammer",rarity:"exotic",type:"shockwave"},
-  {name:"Vampirism",rarity:"exotic",type:"vampiric"},
   {name:"Mimicry",rarity:"exotic",type:"cone"},
+  {name:"Quantum Slicer", rarity:"exotic", type:"quantum"},
+  {name:"Reality Splitter", rarity:"exotic", type:"fracture"},
+  {name:"Pulse Cannon", rarity:"exotic", type:"shock"},
+  {name:"Aether Chakram", rarity:"exotic", type:"aether"},
+  {name:"Chaos Reactor", rarity:"exotic", type:"chaos"},
+  {name:"Harmonic Lance", rarity:"exotic", type:"sound"},
+  {name:"Shadow Singularity", rarity:"exotic", type:"void"},
+  {name:"Solar Eradicator", rarity:"exotic", type:"solar"},
   {name:"End Of Time",rarity:"galactic",type:"wipe"},
+  {name:"Celestial Harbinger", rarity:"cosmic", type:"celestial"},
+  {name:"Astral Riftblade", rarity:"cosmic", type:"rift"},
+  {name:"Voidborn Spirit Cannon", rarity:"cosmic", type:"soulbeam"},
+  {name:"Galaxy Eater", rarity:"galactic", type:"devour"},
+  {name:"Nova Heart", rarity:"galactic", type:"starcore"},
+  {name:"Absolute Zero", rarity:"galactic", type:"frostdeath"},
+  {name:"Event Horizon", rarity:"galactic", type:"blackhole"},
   {name:"Fracture Of The Cosmos",rarity:"cosmic",type:"fracture"},
   {name:"Queen's Hand", rarity:"cosmic", type:"queensHand"},
   {name:"King Philip's Sword Of Calamity",rarity:"developer",type:"calamity"},
@@ -422,7 +459,7 @@ function enchantWithGems(item){
 /* ---------- Chests & Meteors & Villages ---------- */
 let chests = [], meteors = [], villages = [];
 function spawnChestAt(x,y){
-  const rarities = ['rare','epic','legendary','mythic','exotic','universal','multiversal'];
+  const rarities = ['rare','epic','legendary','mythic','exotic','galactic','cosmic'];
   const probs = [0.5,0.2,0.15,0.08,0.05,0.015,0.005];
   let r=Math.random(),acc=0,choose='rare';
   for(let i=0;i<rarities.length;i++){ acc+=probs[i]; if(r<acc){ choose=rarities[i]; break; } }
@@ -440,8 +477,8 @@ function spawnMeteor() {
     let rarity = 'legendary';
 
     // Nerfed rarity chances
-    if (r < 0.5) rarity = 'multiversal';
-    else if (r < 5) rarity = 'universal';
+    if (r < 0.5) rarity = 'cosmic';
+    else if (r < 5) rarity = 'galactic';
     else if (r < 20) rarity = 'exotic';
     else if (r < 30) rarity = 'mythic';
     else rarity = 'legendary';
@@ -1065,16 +1102,6 @@ function performAttack() {
             break;
         }
 
-        case 'vampiric': {
-            hitEntitiesInRadius(player.x, player.y, 48, base, w, (dmg) => {
-                const heal = Math.min(player.maxHp - player.hp, dmg * 0.35);
-                player.hp += heal;
-                burst(player.x, player.y, '255,0,120', 18);
-            });
-            playSound('vamp');
-            break;
-        }
-
         case 'calamity': {
             const dx = mouse.worldX - player.x;
             const dy = mouse.worldY - player.y;
@@ -1097,7 +1124,7 @@ function performAttack() {
             const dir = norm(mouse.worldX - player.x, mouse.worldY - player.y);
             const proj = spawnProjectile(player.x, player.y, dir.x * 12, dir.y * 12, {
                 r: 6,
-                damage: 0,
+                damage: 75,
                 color: rarityToColor(w.rarity),
                 source: 'player',
                 weapon: w,
@@ -1151,7 +1178,7 @@ case 'queensHand': {
     spawnProjectile(player.x, player.y, dir.x * 4, dir.y * 4, {
         r: 30,
         life: 160,
-        damage: base * 5,
+        damage: base * 500,
         color: '255,0,255',
         source: 'player',
         type: 'queensHandAttack',
@@ -1164,7 +1191,7 @@ case 'queensHand': {
                 size: 60,
                 life: 40
             });
-            hitEntitiesInRadius(projectile.x, projectile.y, 110, base * 3, w);
+            hitEntitiesInRadius(projectile.x, projectile.y, 110, base * 2000, w);
         }
     });
 
@@ -1189,7 +1216,7 @@ case 'cone': { // Mimicry
     });
 
     // Hit entities in a radius in front of the player
-    hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 80, w.atk * 2, w);
+    hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 80, w.atk * 50, w);
 
     playSound('swing');
     break;
@@ -1243,7 +1270,7 @@ function performAbility(){
 
     const proj = spawnProjectile(player.x, player.y, dir.x * 8, dir.y * 8, {
         r: 12,
-        damage: 0,
+        damage: 150,
         color: '255,215,60',
         source: 'player',
         weapon: w,
@@ -1299,7 +1326,7 @@ function performAbility(){
     case 'flame':
       for(let i=0;i<18;i++){
         const ang = Math.atan2(mouse.worldY-player.y, mouse.worldX-player.x) + rand(-0.6,0.6);
-        spawnProjectile(player.x+Math.cos(ang)*10, player.y+Math.sin(ang)*10, Math.cos(ang)*6, Math.sin(ang)*6, {r:4, damage:w.atk*0.8, color:'255,100,30', source:'player', weapon:w});
+        spawnProjectile(player.x+Math.cos(ang)*10, player.y+Math.sin(ang)*10, Math.cos(ang)*6, Math.sin(ang)*6, {r:4, damage:w.atk*10, color:'255,100,30', source:'player', weapon:w});
       }
       playSound('magic');
       break;
@@ -1311,7 +1338,7 @@ function performAbility(){
     case 'chakram':
       for(let i=0;i<3;i++){
         const ang = Math.atan2(mouse.worldY-player.y, mouse.worldX-player.x) + (i-1)*0.4;
-        spawnProjectile(player.x, player.y, Math.cos(ang)*9, Math.sin(ang)*9, {r:5, damage:w.atk*1.2, color:rarityToColor(w.rarity), source:'player', weapon:w});
+        spawnProjectile(player.x, player.y, Math.cos(ang)*9, Math.sin(ang)*9, {r:5, damage:w.atk*3, color:rarityToColor(w.rarity), source:'player', weapon:w});
       }
       playSound('arrow');
       break;
@@ -1354,27 +1381,29 @@ case 'soulReaper': {
 }
 
 case 'queensHand': {
-    const def = bossDefs[randInt(0, bossDefs.length - 1)];
-    const b = {
-        x: player.x + rand(-50, 50),
-        y: player.y + rand(-50, 50),
-        w: 56, h: 56,
-        hp: def.maxHp,
-        maxHp: def.maxHp,
-        name: def.name,
-        rarity: def.rarity,
-        biome: def.biome,
-        color: def.color,
-        dead: false,
-        attackCooldown: rand(120, 420),
-        temporary: true,
-        lifetime: 7000,
-        friendly: true, // <-- mark as friendly
-        target: null     // <-- will find nearest enemy in update loop
-    };
-    bosses.push(b);
-    playSound('magic');
-    break;
+    const dx = mouse.worldX - player.x;
+    const dy = mouse.worldY - player.y;
+    const dir = norm(dx, dy);
+
+    spawnProjectile(player.x, player.y, dir.x * 4, dir.y * 4, {
+        r: 30,
+        life: 160,
+        damage: base * 1000,
+        color: '255,0,255',
+        source: 'player',
+        type: 'queensHandAttack',
+		pierce: true,
+        hitList: new Set(),
+        weapon: w,
+        onHit: (target, projectile) => {
+            spawnVFX('explosion', projectile.x, projectile.y, {
+                color: '255,0,255',
+                size: 120,
+                life: 80
+            });
+            hitEntitiesInRadius(projectile.x, projectile.y, 110, base * 10000, w);
+        }
+    });
 }
 
 case 'cone': { // Mimicry Ability
@@ -1392,7 +1421,7 @@ case 'cone': { // Mimicry Ability
         life: 80
     });
 
-    hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 140, w.atk * 4, w);
+    hitEntitiesInRadius(player.x + offsetX, player.y + offsetY, 140, w.atk * 100, w);
 
     playSound('powerSlash');
     break;
@@ -1552,38 +1581,53 @@ function drawPlayer(){
 let prevGridKey = null;
 function worldUpdate(dt){
   // ---------- Meteors (Cinematic) ----------
-  for(const m of meteors){
-    if(!m.landed){
-      m.y += m.vy;
+for (const m of meteors) {
+    if (!m.landed) {
 
-      // Meteor trail
-      spawnParticle(m.x, m.y, {
-        color: '180,0,255',
-        spread: 3,
-        lifeMin: 20,
-        lifeMax: 40,
-        size: 3
-      });
+        // FALL SPEED (optional — increase for dramatic effect)
+        m.y += m.vy * 1.3;
 
-      // Impact check
-      if(m.y > CSS_H * 0.8){
-        m.landed = true;
+        // ============================================
+        //            BIGGER METEOR TRAIL
+        // ============================================
+        spawnParticle(m.x, m.y, {
+            color: '180,0,255',
+            spread: 6,       // was 3 → now wider
+            lifeMin: 30,     // was 20 → longer lasting
+            lifeMax: 60,     // was 40 → longer lasting
+            size: 6          // was 3 → larger trail particles
+        });
 
-        // Explosion with big crater
-        burst(m.x, m.y, '160,70,200', m.craterSize);
-        playSound('explosion');
+        // ============================================
+        //                 IMPACT
+        // ============================================
+        if (m.y > CSS_H * 0.8) {
+            m.landed = true;
 
-        // Chest at impact
-        spawnChestAt(m.x-12, m.y-12);
-      }
+            // HUGE CRATER EXPLOSION
+            burst(m.x, m.y, '160,70,200', m.craterSize * 2.5); // was *1 → now *2.5
 
-      // Optional visual meteor (ellipse)
-      ctx.fillStyle = '#aa33ff';
-      ctx.beginPath();
-      ctx.ellipse(m.x, m.y, m.width, m.height, 0, 0, Math.PI*2);
-      ctx.fill();
+            playSound('explosion');
+
+            // Chest at impact
+            spawnChestAt(m.x - 12, m.y - 12);
+        }
+
+        // ============================================
+        //             VISUAL METEOR (MUCH BIGGER)
+        // ============================================
+        ctx.fillStyle = '#aa33ff';
+        ctx.beginPath();
+        ctx.ellipse(
+            m.x,
+            m.y,
+            m.width * 2.2,  // was m.width → larger
+            m.height * 2.2, // was m.height → larger
+            0, 0, Math.PI * 2
+        );
+        ctx.fill();
     }
-  }
+}
 
   // ---------- Boss spawn & grid transition (unchanged) ----------
   const pg = { gx: Math.floor(player.x / GRID_PX), gy: Math.floor(player.y / GRID_PX) };
@@ -1713,5 +1757,3 @@ window._GAME = { player, enemies, bosses, chests, meteors };
 </script>
 </body>
 </html>
-
-
