@@ -80,7 +80,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function populateBossDropdown() {
-        bossSelect.innerHTML = ""; // clear existing
+        bossSelect.innerHTML = "";
         bossDefs.forEach(b => {
             const opt = document.createElement("option");
             opt.value = b.name;
@@ -91,28 +91,52 @@ window.addEventListener("DOMContentLoaded", () => {
 
     waitForBossDefs();
 
-    // Spawn boss near player (permanent until defeated)
+    /* ============================================================
+        DEV PANEL — SPAWN FULL BEHAVIOR BOSS
+       ============================================================ */
     window.spawnBossDevPanel = function() {
         const selected = bossSelect.value;
         const def = bossDefs.find(b => b.name === selected);
         if (!def) return;
 
-        bosses.push({
-            x: player.x + rand(-50,50),
-            y: player.y + rand(-50,50),
+        // spawn in a safe ring around the player
+        const minDist = 100;
+        const maxDist = 180;
+        const ang = Math.random() * Math.PI * 2;
+        const dist = minDist + Math.random() * (maxDist - minDist);
+
+        const sx = player.x + Math.cos(ang) * dist;
+        const sy = player.y + Math.sin(ang) * dist;
+
+        const boss = {
+            x: sx,
+            y: sy,
             w: 56,
             h: 56,
+
             hp: def.maxHp,
             maxHp: def.maxHp,
             name: def.name,
             rarity: def.rarity,
             biome: def.biome,
             color: def.color,
+
+            // AI core flags
+            friendly: false,
             dead: false,
-            friendly: false, // hostile to player
-            attackCooldown: rand(120,420),
-            temporary: true // optional, can keep if you want special effects
-        });
+            spawned: true,
+            aggro: true,
+            target: player,
+
+            attackCooldown: 60,
+            behaviorTimer: 90,
+            behaviorMode: "chase", // default mode
+
+            // mark dev boss so it IGNITES immediately
+            ignoreSafePeriod: true
+        };
+
+        bosses.push(boss);
 
         if (typeof playSound === "function") playSound("magic");
     };
@@ -557,7 +581,7 @@ const _enemyTypesSafe = (typeof enemyTypes !== 'undefined' && Array.isArray(enem
       { type: 'heavy', color:'#8b0000', hp:400, speed:0.9, xp:25 },
       { type: 'knight', color:'#808080', hp:250, speed:1.5, xp:35 },
       { type: 'megaKnight', color:'#333333', hp:650, speed:0.7, xp:50 },
-      { type: 'necromancer', color:'#4b0082', hp:250, speed:1.5, xp:60 }
+      { type: 'healer', color:'#4b0082', hp:250, speed:1.5, xp:60 }
     ];
 
 /** spawnEnemyWorldScatter()
@@ -858,37 +882,6 @@ function updateEntities(dt){
             player.coins += Math.max(200, Math.round(b.maxHp * 0.001));
             player.gems += (b.rarity==='mythic'||b.rarity==='exotic')?2:1;
             spawnChestAt(b.x-12,b.y-12);
-			
-			// ============================
-    //  FRIENDLY QUEEN'S HAND AI
-    // ============================
-    if (b.friendly) {
-        // Find nearest enemy if no target or target dead
-        if (!b.target || b.target.dead) {
-            b.target = enemies.find(e => !e.friendly && !e.dead);
-        }
-
-        if (b.target) {
-            const dx = b.target.x - b.x;
-            const dy = b.target.y - b.y;
-            const dist = Math.hypot(dx, dy) || 1;
-
-            // Only move if within detection range (e.g., 67)
-            if (dist < 67) {
-                b.x += (dx / dist) * (b.speed || 1.5); // adjust speed
-                b.y += (dy / dist) * (b.speed || 1.5);
-            }
-
-            // Deal damage on contact
-            if (dist < 40) { // contact radius
-                b.target.hp -= 70; // nerfed damage
-                spawnVFX('hit', b.target.x, b.target.y, { color: '255,180,0' });
-                if (typeof playSound === "function") playSound('hit');
-            }
-        }
-
-        continue; // Skip normal boss AI
-    }
 
     // --- Normal boss behavior below ---
     // (existing AI code for non-friendly bosses)
@@ -929,40 +922,84 @@ function updateEntities(dt){
         }
     }
 
-  // Bosses
-  for(const b of bosses){
-    if(b.dead) continue;
+// --- BOSSES ---
+for (const b of bosses) {
+    if (b.dead) continue;
 
+    // --- ENSURE BOSS SPAWNS NEAR PLAYER (auto-fix bad spawns) ---
+    if (!b.spawnPositionFixed) {
+        const dist = Math.hypot(b.x - player.x, b.y - player.y);
+
+        // If boss spawned too far (offscreen / wrong place)
+        if (dist > 350) {
+            // Respawn boss near player safely
+            b.x = player.x + rand(-180, 180);
+            b.y = player.y + rand(-180, 180);
+        }
+
+        b.spawnPositionFixed = true; // run only once
+    }
+
+    // --- Boss cooldowns & attacks ---
     b.attackCooldown -= dt;
-    if(b.attackCooldown <= 0){
-      switch(b.rarity){
-        case 'common': bossDash(b); b.attackCooldown = rand(2200,2400); break;
-        case 'rare': bossShoot(b); b.attackCooldown = rand(600,800); break;
-        case 'epic': bossAoe(b,100); b.attackCooldown = rand(5000,7000); break;
-        case 'legendary': bossAoe(b,120); for(let i=0;i<3;i++) spawnEnemy(b.x+rand(-40,40), b.y+rand(-40,40)); b.attackCooldown = rand(8000,9000); break;
-        case 'mythic': bossAoe(b,160); setTimeout(()=>bossAoe(b,120),300); b.attackCooldown = rand(10000,12000); break;
-        case 'exotic': bossTeleport(b); bossAoe(b,140); b.attackCooldown = rand(3200,4800); break;
-        case 'universal': bossMassiveGrid(b); b.attackCooldown = rand(15000,25000); break;
-        case 'multiversal': bossUltimate(b); b.attackCooldown = rand(30000,50000); break;
-        default: bossDash(b); b.attackCooldown = rand(800,1000);
-      }
+    if (b.attackCooldown <= 0) {
+        switch (b.rarity) {
+            case 'common': bossDash(b); b.attackCooldown = rand(2200,2400); break;
+            case 'rare': bossShoot(b); b.attackCooldown = rand(600,800); break;
+            case 'epic': bossAoe(b,100); b.attackCooldown = rand(5000,7000); break;
+            case 'legendary':
+                bossAoe(b,120);
+                for (let i = 0; i < 3; i++) {
+                    spawnEnemy(b.x + rand(-40,40), b.y + rand(-40,40));
+                }
+                b.attackCooldown = rand(8000,9000);
+                break;
+            case 'mythic':
+                bossAoe(b,160);
+                setTimeout(() => bossAoe(b,120), 300);
+                b.attackCooldown = rand(10000,12000);
+                break;
+            case 'exotic':
+                bossTeleport(b);
+                bossAoe(b,140);
+                b.attackCooldown = rand(3200,4800);
+                break;
+            case 'universal':
+                bossMassiveGrid(b);
+                b.attackCooldown = rand(15000,25000);
+                break;
+            case 'multiversal':
+                bossUltimate(b);
+                b.attackCooldown = rand(30000,50000);
+                break;
+            default:
+                bossDash(b);
+                b.attackCooldown = rand(1800,2400);
+                break;
+        }
     }
 
-    const dx = player.x - b.x, dy = player.y - b.y, d = Math.hypot(dx,dy)||1;
-    b.x += (dx/d)*0.2; b.y += (dy/d)*0.2;
+    // --- Movement toward player ---
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist2 = Math.hypot(dx, dy) || 1;
+    b.x += (dx / dist2) * 0.25;
+    b.y += (dy / dist2) * 0.25;
 
-    // Boss death
-    if(b.hp <= 0 && !b.dead){ 
-      b.hp = 0;
-      b.dead = true;
-      burst(b.x,b.y,'255,255,255',300); 
-      playSound('explosion'); 
-      player.statPoints += 1; 
-      player.coins += Math.max(200, Math.round(b.maxHp*0.001)); 
-      player.gems += (b.rarity==='mythic'||b.rarity==='exotic')?2:1; 
-      spawnChestAt(b.x-12,b.y-12); 
+    // --- Boss death ---
+    if (b.hp <= 0 && !b.dead) {
+        b.hp = 0;
+        b.dead = true;
+        burst(b.x, b.y, '255,255,255', 300);
+        if (typeof playSound === "function") playSound('explosion');
+
+        player.statPoints += 1;
+        player.coins += Math.max(200, Math.round(b.maxHp * 0.001));
+        player.gems += (b.rarity === 'mythic' || b.rarity === 'exotic') ? 2 : 1;
+
+        spawnChestAt(b.x - 12, b.y - 12);
     }
-  }
+}
 
 /* ---------- Damage helper ---------- */
 function hitEntitiesInRadius(x,y,radius,damage,weapon,onDamage){
@@ -1405,7 +1442,6 @@ case 'queensHand': {
         }
     });
 }
-
 case 'cone': { // Mimicry Ability
     const dx = mouse.worldX - player.x;
     const dy = mouse.worldY - player.y;
